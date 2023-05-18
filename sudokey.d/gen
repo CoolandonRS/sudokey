@@ -1,0 +1,28 @@
+#!/bin/bash
+if [[ $(id -u) != 0 ]]; then
+  echo "Must run as root"; exit 2
+fi
+
+if [ -n "$1" ]; then
+  user=$1
+else
+  read -p "Username: " user
+fi
+loc=$(eval echo ~$user)
+if [ ! -d $loc/.ssh ]; then
+  mkdir $loc/.ssh
+elif [ -f $loc/.ssh/sudo_keys ]; then
+  echo "ERROR: File already exists"
+  exit 1
+fi
+touch $loc/.ssh/sudo_keys
+chown root:root $loc/.ssh/sudo_keys
+chmod 644 $loc/.ssh/sudo_keys
+if [ -n "$2" ]; then
+  key=$2
+else
+  read -p "Key:" key
+fi
+echo $key >> $loc/.ssh/sudo_keys
+chattr +i $loc/.ssh/sudo_keys
+echo "Complete!"

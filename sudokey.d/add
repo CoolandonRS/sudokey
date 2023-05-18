@@ -1,0 +1,20 @@
+#!/bin/bash
+if [[ $(id -u) != 0 ]]; then
+  echo "Must run as root"; exit 2
+fi
+
+echo "Adding to user:" $SUDO_USER
+LOC=$(eval echo ~$SUDO_USER)
+chattr -i $LOC/.ssh/sudo_keys
+if [ -n "$1" ]; then
+  if [[ $1 == "ssh-rsa" ]]; then
+    echo "You forgot to quote the key!"
+    exit 1
+  fi
+  key=$1
+else
+  read -p "Key: " key
+fi
+echo $key >> $LOC/.ssh/sudo_keys
+chattr +i $LOC/.ssh/sudo_keys
+echo "Complete!"

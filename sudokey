@@ -1,0 +1,66 @@
+#!/bin/bash
+if [[ ! $1 =~ ^(ls)|(list)|(help)|$ && $(id -u) != 0 ]]; then
+  echo "Must run as root"; exit 2
+fi
+if [ -z $1 ]; then
+  echo "Must have a verb. Try \"sudokey help\""
+  exit 1
+fi
+
+loc="$(dirname "$(realpath -s "$BASH_SOURCE")")/sudokey.d"
+
+case $1 in
+  add)
+    $loc/add $2
+    ;;
+  rm | rem | remove)
+    $loc/rm $2
+    ;;
+  ls | list)
+    $loc/ls
+    ;;
+  gen)
+    $loc/gen $2 $3
+    ;;
+  del | delete)
+    $loc/del $2
+    ;;
+  fromauth | from_auth)
+    $loc/fromauth $2
+    ;;
+  toauth | to_auth)
+    $loc/toauth $2
+    ;;
+  keyon | key_on | enablekey | enable_key)
+    $loc/keyon
+    ;;
+  keyoff | key_off | disablekey | disable_key)
+    $loc/keyoff
+    ;;
+  passon | pass_on | passwdon | passwd_on | enablepass | enablepasswd | enable_pass | enable_passwd)
+    $loc/passon
+    ;;
+  passoff | pass_off | passwdoff | passwd_off | disablepass | disablepasswd | disable_pass | disable_passwd)
+    $loc/passoff
+    ;;
+  help | \?)
+    echo
+    echo "add [key]        - add a sudokey to the current user"
+    echo "rm [index]       - remove a key from the current user"
+    echo "ls               - list sudokeys attached to the current user"
+    echo "gen [user] [key] - generate a sudokey file for another user"
+    echo "del [user]       - remove a sudokey file from another user"
+    echo "fromauth [user]  - create a sudokey file for another user using the keys in authorized_keys"
+    echo "toauth [user]    - remove another users sudokey file and put all contained keys in authorized_keys"
+    echo "keyon            - enables sudokey authentication on the server"
+    echo "keyoff           - disables sudokey authentication on the server"
+    echo "passon           - enables password authentication on the server"
+    echo "passoff          - disables password authentication on the server"
+    echo "help             - show this text"
+    echo
+    exit 0
+    ;;
+  *)
+    echo "Unkown verb. Try \"sudokey help\""
+    ;;
+esac

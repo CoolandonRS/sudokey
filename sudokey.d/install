@@ -1,0 +1,45 @@
+#!/bin/bash
+if [[ sudo echo sudo != "sudo" ]]; then
+  echo "Must be able to sudo"; exit 2
+fi
+
+read -p "Package Manager" pkg
+
+wheel=$true
+
+case $pkg in
+  apt)
+    sudo apt install libpam-ssh-agent-auth
+    wheel=$false
+    ;;
+  dnf)
+    sudo dnf install pam_ssh_agent_auth
+    ;;
+  yum)
+    sudo yum install pam_ssh_agent_auth
+    ;;
+  yay)
+    yay -Syu pam_ssh_agent_auth
+    ;;
+  *)
+    echo "Unsupported. Use apt, dnf, yum, or yay"
+    ;;
+esac
+
+sudo sed '2 i auth       sufficient   pam_ssh_agent_auth.so file=~/.ssh/sudo_keys' /etc/pam.d/sudo
+sudo sed '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
+
+sudo mv ../sudokey /usr/local/sbin
+sudo mkdir /usr/local/sbin/sudokey.d
+sudo mv ../sudokey.d /usr/local/sbin
+if [ $wheel ]; then
+  sudo chown -R root:wheel /usr/local/sbin/sudokey /usr/local/sbin/sudokey.d
+else
+  sudo chown -R root:root /usr/local/sbin/sudokey /usr/local/sbin/sudokey.d
+fi
+sudo chmod -R 750 /usr/local/sbin/sudokey /usr/local/sbin/sudokey.d
+
+echo "Installed!"
+echo "Use 'sudokey gen' to make sudokeys for users"
+echo "Use 'sudokey passoff' to disable password sudo once sudokey has been set up"
+echo "Please be careful, and don't disable your sudo entirely. You can. Please don't"
