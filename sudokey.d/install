@@ -1,4 +1,7 @@
 #!/bin/bash
+if [[ $(id -u) == 0 ]]; then
+  echo "Must not run as root. This program will sudo for you."; exit 2
+fi
 if [[ sudo echo sudo != "sudo" ]]; then
   echo "Must be able to sudo"; exit 2
 fi
