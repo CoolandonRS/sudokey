@@ -2,7 +2,7 @@
 Utilities for allowing and managing sudo with ssh agent authentication
 
 ### Server Installation
-To install, run `curl https://raw.githubusercontent.com/CoolandonRS/sudokey/main/install | bash`
+To install, run `curl -s https://raw.githubusercontent.com/CoolandonRS/sudokey/main/install | bash`
 
 ### Client Installation
 1. (Windows Only) Enable the Open SSH Authentication Agent service (ssh-agent.exe)

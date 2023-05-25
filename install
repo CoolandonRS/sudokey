@@ -11,6 +11,7 @@ read -p "Package Manager: " pkg
 
 wheel=0
 
+echo
 case $pkg in
   apt)
     sudo apt install libpam-ssh-agent-auth
@@ -33,9 +34,10 @@ case $pkg in
     echo "This however requires you to install the package yourself. It is commonly called pam_ssh_agent_auth"
     ;;
 esac
+echo
 
-sudo sed '2 i auth sufficient pam_ssh_agent_auth.so file=~/.ssh/sudo_keys' /etc/pam.d/sudo
-sudo sed '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
+sudo sed -i '2 i auth sufficient pam_ssh_agent_auth.so file=~/.ssh/sudo_keys' /etc/pam.d/sudo
+sudo sed -i '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
 
 sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
 if [ $wheel ]; then
