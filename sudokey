@@ -227,17 +227,17 @@ function doTheThing() {
     ;;
   update)
     assertSudo;
-    local serverVer=$(wget https://raw.githubusercontent.com/CoolandonRS/sudokey/main/version)
+    local serverVer=$(curl https://raw.githubusercontent.com/CoolandonRS/sudokey/main/version)
     if (( ver >= serverVer )); then 
       echo "Up to date!"; exit 0
     fi
     echo "Downloading update..."
     echo "Do not terminate this program."
     local group=$(stat -c "%G" /usr/local/sbin/sudokey)
-    rm /usr/local/sbin/sudokey
-    wget "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
+    rm -f /usr/local/sbin/sudokey
+    wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
     chown root:"$group" /usr/local/sbin/sudokey
-    sudo chmod -R 750 /usr/local/sbin/sudokey
+    chmod -R 750 /usr/local/sbin/sudokey
     echo "Updated!"
     ;;
   help | \?)
