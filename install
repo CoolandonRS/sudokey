@@ -7,7 +7,7 @@ if [[ $(sudo echo sudo) != "sudo" ]]; then
   echo "Must be able to sudo"; exit 2
 fi
 
-read -p "Package Manager: " pkg
+read -p "Package Manager: " pkg < /dev/tty
 
 wheel=0
 
@@ -32,6 +32,7 @@ case $pkg in
     echo "Unsupported. Use apt, dnf, yum, or yay, or submit a pull request to add support to your package manager."
     echo "You may also enter \"skip\" as the name of your package manager to skip automatic installation"
     echo "This however requires you to install the package yourself. It is commonly called pam_ssh_agent_auth"
+    exit 1
     ;;
 esac
 echo
