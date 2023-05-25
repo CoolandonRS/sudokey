@@ -24,8 +24,6 @@ fi
 sudokeyFile="$sshloc"/"$sudokeyFilename"
 authkeyFile="$sshloc"/"$authkeyFilename"
 
-#loc="$(dirname "$(realpath -s "${BASH_SOURCE[0]}")")/sudokey.d"
-
 #region Function Declarations
 function assertSudo() {
   if [[ $(id -u) != 0 ]]; then
@@ -228,7 +226,7 @@ function doTheThing() {
   update)
     assertSudo;
     local serverVer=$(curl -s https://raw.githubusercontent.com/CoolandonRS/sudokey/main/version)
-    if (( ver >= serverVer )); then 
+    if (( ver >= ${serverVer:1} )); then
       echo "Up to date!"; exit 0
     fi
     echo "Downloading update..."
