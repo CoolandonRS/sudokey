@@ -1,0 +1,51 @@
+#!/bin/bash
+if [[ $(id -u) == 0 ]]; then
+  # This is literally only needed for yay support. Yay!
+  echo "Must not run as root. This program will sudo for you."; exit 2
+fi
+if [[ $(sudo echo sudo) != "sudo" ]]; then
+  echo "Must be able to sudo"; exit 2
+fi
+
+read -p "Package Manager: " pkg
+
+wheel=0
+
+case $pkg in
+  apt)
+    sudo apt install libpam-ssh-agent-auth
+    wheel=1
+    ;;
+  dnf)
+    sudo dnf install pam_ssh_agent_auth
+    ;;
+  yum)
+    sudo yum install pam_ssh_agent_auth
+    ;;
+  yay)
+    yay -Syu pam_ssh_agent_auth
+    ;;
+  skip)
+    ;;
+  *)
+    echo "Unsupported. Use apt, dnf, yum, or yay, or submit a pull request to add support to your package manager."
+    echo "You may also enter \"skip\" as the name of your package manager to skip automatic installation"
+    echo "This however requires you to install the package yourself. It is commonly called pam_ssh_agent_auth"
+    ;;
+esac
+
+sudo sed '2 i auth sufficient pam_ssh_agent_auth.so file=~/.ssh/sudo_keys' /etc/pam.d/sudo
+sudo sed '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
+
+sudo wget "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
+if [ $wheel ]; then
+  sudo chown -R root:wheel /usr/local/sbin/sudokey
+else
+  sudo chown -R root:sudoers /usr/local/sbin/sudokey
+fi
+sudo chmod -R 750 /usr/local/sbin/sudokey
+
+echo "Installed!"
+echo "Use 'sudokey gen' to make sudokeys for users"
+echo "Use 'sudokey passoff' to disable password sudo once sudokey has been set up"
+echo "Please be careful, and don't disable your sudo entirely. You can. Please don't"

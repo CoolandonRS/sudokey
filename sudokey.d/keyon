@@ -1,7 +1,0 @@
-#!/bin/bash
-if [[ $(id -u) != 0 ]]; then
-  echo "Must run as root"; exit 2
-fi
-line=$(printf '%s\n' "auth       sufficient   pam_ssh_agent_auth.so file=~/.ssh/sudo_keys" | sed -e 's/[\/&]/\\&/g')
-sed -i "/^#$line/ c$line" /etc/pam.d/sudo
-echo "Complete!"

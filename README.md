@@ -2,11 +2,11 @@
 Utilities for allowing and managing sudo with ssh agent authentication
 
 ### Server Installation
-To install, git clone and cd into `sudokey.d`, and run the `install` script. It will do the rest for you!
+To install, run `wget https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey | sudo bash`
 
 ### Client Installation
-1. (Windows Only) Enable the Open SSH Authentication Agent service (ssh-agent.exe), then follow linux instructions.
-2. Run `ssh-add`
+1. (Windows Only) Enable the Open SSH Authentication Agent service (ssh-agent.exe)
+2. (Optional) Run `ssh-add` (Will have to be redone on reboot, you no longer have to type in your ssh key passphrase)
 3. Edit .ssh/config to include `ForwardAgent true` when connecting to your server, or use `ssh -A` whenever connecting.
 
 #### Example Client SSH Config

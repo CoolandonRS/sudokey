@@ -1,47 +1,244 @@
 #!/bin/bash
-if [[ ! $1 =~ ^(ls)|(list)|(help)|$ && $(id -u) != 0 ]]; then
-  echo "Must run as root"; exit 2
+readonly ver=2 # Don't change me or updater breaks!
+sudokeyFilename="sudo_keys"
+authkeyFilename="authorized_keys"
+sudoFile="/etc/pam.d/sudo"
+keyLine="auth \+sufficient \+pam_ssh_agent_auth.so \+file=~/.ssh/sudo_keys"
+passLine="auth \+include \+system-auth"
+passLine2="password \+include \+system-auth";
+
+if [[ $(id -u) != 0 ]]; then
+  if [[ ! "$1" =~ ^(ls)|(list)|(help)|$ ]]; then
+    echo "Must run as root"; exit 2
+  fi
+  user=$USER
+  sshloc="$(eval echo ~"$USER")"/.ssh
+else
+  user=$SUDO_USER
+  sshloc="$(eval echo ~"$SUDO_USER")"/.ssh
 fi
-if [ -z $1 ]; then
-  echo "Must have a verb. Try \"sudokey help\""
-  exit 1
+if [ -z "$1" ]; then
+  echo "Must have a verb. Try \"sudokey help\""; exit 4
 fi
 
-loc="$(dirname "$(realpath -s "$BASH_SOURCE")")/sudokey.d"
+sudokeyFile="$sshloc"/"$sudokeyFilename"
+authkeyFile="$sshloc"/"$authkeyFilename"
 
-case $1 in
+#loc="$(dirname "$(realpath -s "${BASH_SOURCE[0]}")")/sudokey.d"
+
+#region Function Declarations
+function assertSudo() {
+  if [[ $(id -u) != 0 ]]; then
+    echo "Must run as root"
+    exit 2
+  fi
+}
+function unlock() {
+  assertSudo
+  chattr -i "$sudokeyFile"
+}
+function lock() {
+  assertSudo
+  chattr +i "$sudokeyFile"
+}
+function hasSudoKey() {
+  if [[ -f "$sudokeyFile" ]]; then
+    return 0
+  fi
+  return 1
+}
+function assertSudoKey() {
+  if ! hasSudoKey; then
+    echo "This function requires your user to have a sudokey file"
+    exit 3
+  fi
+}
+function echoTarget() {
+  echo "Running as $user"
+}
+function fin() {
+  echo "Complete!"
+  exit 0
+}
+function comment() {
+  local replace=${1// \\+/ }
+  sed -i "\;^$1; c#$replace" "$sudoFile"
+}
+function uncomment() {
+  local replace=${1// \\+/ }
+  sed -i "\;^#$1; c$replace" "$sudoFile"
+}
+function target() {
+  if [ -n "$1" ]; then
+    user=$1
+  else
+    read -p "Username: " user
+  fi
+  sshloc=$(eval echo ~"$user")/.ssh
+  sudokeyFile="$sshloc"/"$sudokeyFilename"
+  authkeyFile="$sshloc"/"$authkeyFilename"
+}
+function _add() {
+  assertSudo; assertSudoKey; echoTarget
+  local key
+  if [ -n "$1" ]; then
+    if [[ $1 =~ ^((ssh-rsa)|(ssh-dss)|(ssh-ed25519))$ ]]; then
+      echo "You forgot to quote the key!"; exit 1
+    fi
+    key=$1
+  else
+    read -p "Key: " key
+  fi
+  unlock
+  echo "$key" >> "$sudokeyFile"
+  lock
+  fin
+}
+function _ls() {
+  assertSudoKey
+  echo "$user's Keys:"
+  local inc=0
+  local line
+  while IFS= read -r line; do
+    ((inc++))
+    echo $inc "$(echo "$line" | cut -d " " -f 3-)"
+  done < "$sudokeyFile"
+}
+function _rm() {
+  assertSudo; assertSudoKey; echoTarget
+  local num
+  if [ -n "$1" ]; then
+    num=$1
+  else
+    echo; _ls; echo
+    read -p "Which: " num
+  fi
+  unlock
+  sed -i "${num}"d "$sudokeyFile"
+  lock
+  fin
+}
+function _gen() {
+  assertSudo
+  target "$1"
+  if [ ! -d "$sshloc" ]; then
+    mkdir "$sshloc"
+  elif [ -f "$sudokeyFile" ]; then
+    echo "ERROR: File already exists"; exit 1
+  fi
+  touch "$sudokeyFile"
+  chown root:root "$sudokeyFile"
+  chmod 644 "$sudokeyFile"
+  _add "$2"
+}
+function _del() {
+  assertSudo
+  target "$1"
+  assertSudoKey
+  unlock
+  rm -f "$sudokeyFile"
+  fin
+}
+function _fromauth() {
+  assertSudo
+  target "$1"
+  if [ ! -d "$sshloc" ]; then
+    mkdir "$sshloc"
+  elif [ -f "$sshloc" ]; then
+    echo "ERROR: $sudokeyFilename already exists"; exit 1
+  elif [ ! -f "$authkeyFile" ]; then
+    echo "ERROR: $authkeyFilename doesn't exist"; exit 1
+  fi
+  cat "$authkeyFile" > "$sudokeyFile"
+  chown root:root "$sudokeyFile"
+  chmod 644 "$sudokeyFile"
+  lock
+  rm -f "$authkeyFile"
+  fin
+}
+function _toauth() {
+  assertSudo
+  target "$1"
+  assertSudoKey
+  if [ ! -f "$authkeyFile" ]; then
+    touch "$authkeyFile"
+    chown "$user":"$user" "$authkeyFile"
+    chmod 644 "$authkeyFile"
+  fi
+  cat "$sudokeyFile" >> "$authkeyFile";
+  _del "$user"
+}
+#endregion
+
+#region Case Statement
+function doTheThing() {
+  if [ -z "$1" ]; then
+    echo "Must have a verb. Try \"sudokey help\""; exit 4
+  fi
+  case $1 in
   add)
-    $loc/add $2
-    ;;
-  rm | rem | remove)
-    $loc/rm $2
+    _add "$2"
     ;;
   ls | list)
-    $loc/ls
+    _ls
+    ;;
+  rm | rem | remove)
+    _rm "$2"
     ;;
   gen)
-    $loc/gen $2 $3
+    _gen "$2" "$3"
     ;;
   del | delete)
-    $loc/del $2
+    _del "$2"
     ;;
   fromauth | from_auth)
-    $loc/fromauth $2
+    _fromauth "$2"
     ;;
   toauth | to_auth)
-    $loc/toauth $2
+    _toauth "$2"
     ;;
   keyon | key_on | enablekey | enable_key)
-    $loc/keyon
+    assertSudo
+    uncomment "$keyLine"
+    fin
     ;;
   keyoff | key_off | disablekey | disable_key)
-    $loc/keyoff
+    assertSudo
+    comment "$keyLine"
+    fin
     ;;
   passon | pass_on | passwdon | passwd_on | enablepass | enablepasswd | enable_pass | enable_passwd)
-    $loc/passon
+    assertSudo
+    uncomment "$passLine"
+    if grep -q "$passLine2" "$sudoFile"; then uncomment "$passLine2"; fi
+    fin
     ;;
   passoff | pass_off | passwdoff | passwd_off | disablepass | disablepasswd | disable_pass | disable_passwd)
-    $loc/passoff
+    assertSudo
+    comment "$passLine"
+    if grep -q "$passLine2" "$sudoFile"; then comment "$passLine2"; fi
+    fin
+    ;;
+  as | target)
+    assertSudo
+    target "$2"
+    shift 2
+    doTheThing "$@"
+    ;;
+  update)
+    assertSudo;
+    local serverVer=$(wget https://raw.githubusercontent.com/CoolandonRS/sudokey/main/version)
+    if (( ver >= serverVer )); then 
+      echo "Up to date!"; exit 0
+    fi
+    echo "Downloading update..."
+    echo "Do not terminate this program."
+    local group=$(stat -c "%G" /usr/local/sbin/sudokey)
+    rm /usr/local/sbin/sudokey
+    wget "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
+    chown root:"$group" /usr/local/sbin/sudokey
+    sudo chmod -R 750 /usr/local/sbin/sudokey
+    echo "Updated!"
     ;;
   help | \?)
     echo
@@ -56,11 +253,18 @@ case $1 in
     echo "keyoff           - disables sudokey authentication on the server"
     echo "passon           - enables password authentication on the server"
     echo "passoff          - disables password authentication on the server"
+    echo "as [verb] [arg]  - run the specified verb as another user"
+    echo "update           - check for an update, and if found, install"
     echo "help             - show this text"
     echo
     exit 0
     ;;
   *)
     echo "Unkown verb. Try \"sudokey help\""
+    exit 4
     ;;
-esac
+  esac
+}
+#endregion
+
+doTheThing "$@"
