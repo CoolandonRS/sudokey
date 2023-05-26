@@ -177,7 +177,7 @@ function _reinstall() {
   rm -f "$scriptLoc"
   wget -q "$repoLoc/sudokey" -O "$scriptLoc"
   chown root:"$group" "$scriptLoc"
-  chmod -R 750 "$scriptLoc"
+  chmod 750 "$scriptLoc"
   echo "Installed!"
   exit 0
 }

@@ -42,11 +42,11 @@ sudo sed -i '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
 
 sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
 if [ $wheel ]; then
-  sudo chown -R root:wheel /usr/local/sbin/sudokey
+  sudo chown root:wheel /usr/local/sbin/sudokey
 else
-  sudo chown -R root:sudoers /usr/local/sbin/sudokey
+  sudo chown root:sudoers /usr/local/sbin/sudokey
 fi
-sudo chmod -R 750 /usr/local/sbin/sudokey
+sudo chmod 750 /usr/local/sbin/sudokey
 
 echo "Installed!"
 echo "Use 'sudokey gen' to make sudokeys for users"
