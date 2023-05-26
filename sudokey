@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly ver=3 # Don't change me or updater breaks!
+readonly ver=4 # Don't change me or updater breaks!
 readonly sudokeyFilename="sudo_keys"
 readonly authkeyFilename="authorized_keys"
 readonly sudoFile="/etc/pam.d/sudo"
@@ -175,7 +175,7 @@ function _reinstall() {
   echo "Do not terminate this program."
   local group=$(stat -c "%G" "$scriptLoc")
   rm -f "$scriptLoc"
-  wget -q "$repoLoc/sudokey" "$scriptLoc"
+  wget -q "$repoLoc/sudokey" -o "$scriptLoc"
   chown root:"$group" "$scriptLoc"
   chmod -R 750 "$scriptLoc"
   echo "Installed!"
