@@ -14,17 +14,17 @@ wheel=0
 echo
 case $pkg in
   apt)
-    sudo apt install libpam-ssh-agent-auth
+    sudo apt install libpam-ssh-agent-auth < /dev/tty
     wheel=1
     ;;
   dnf)
-    sudo dnf install pam_ssh_agent_auth
+    sudo dnf install pam_ssh_agent_auth < /dev/tty
     ;;
   yum)
-    sudo yum install pam_ssh_agent_auth
+    sudo yum install pam_ssh_agent_auth < /dev/tty
     ;;
   yay)
-    yay -Syu pam_ssh_agent_auth
+    yay -Syu pam_ssh_agent_auth < /dev/tty
     ;;
   skip)
     ;;
