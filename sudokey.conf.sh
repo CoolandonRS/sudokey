@@ -1,5 +1,5 @@
-﻿#!/bin/bash
-readonly confVer=1
+#!/bin/bash
+readonly confVer=2
 readonly sudokeyFilename="sudo_keys"
 readonly authkeyFilename="authorized_keys"
 readonly sudoFile="/etc/pam.d/sudo"
