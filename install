@@ -14,17 +14,17 @@ wheel=0
 echo
 case $pkg in
   apt)
-    sudo apt install libpam-ssh-agent-auth
+    sudo apt install libpam-ssh-agent-auth < /dev/tty
     wheel=1
     ;;
   dnf)
-    sudo dnf install pam_ssh_agent_auth
+    sudo dnf install pam_ssh_agent_auth < /dev/tty
     ;;
   yum)
-    sudo yum install pam_ssh_agent_auth
+    sudo yum install pam_ssh_agent_auth < /dev/tty
     ;;
   yay)
-    yay -Syu pam_ssh_agent_auth
+    yay -Syu pam_ssh_agent_auth < /dev/tty
     ;;
   skip)
     ;;
@@ -39,6 +39,8 @@ echo
 
 sudo sed -i '2 i auth sufficient pam_ssh_agent_auth.so file=~/.ssh/sudo_keys' /etc/pam.d/sudo
 sudo sed -i '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
+
+echo 'Defaults env_keep += "SSH_AUTH_SOCK"' | sudo tee /etc/sudoers.d/sudokey > /dev/null
 
 sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" -O /usr/local/sbin/sudokey
 if [ $wheel ]; then
