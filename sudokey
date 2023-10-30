@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly ver=8 # Do not change
+readonly ver=9 # Do not change
 readonly fallbackRepo="https://raw.githubusercontent.com/CoolandonRS/sudokey/main" # changes will be forgotten on update/reinstall
 
 if ! [ -f "/etc/sudokey.conf" ]; then
@@ -274,7 +274,7 @@ function doTheThing() {
     assertSudo
     local versions
     mapfile -t versions < <(curl -s "$repoLoc/version")
-    if (( ver >= versions[0] )); then
+    if (( ver >= ${versions[0]:1} )); then
       echo "Script up to date!";
     else
       _reinstall
