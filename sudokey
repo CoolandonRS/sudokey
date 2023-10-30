@@ -1,14 +1,21 @@
 #!/bin/bash
-readonly ver=5 # Don't change me or updater breaks!
-readonly sudokeyFilename="sudo_keys"
-readonly authkeyFilename="authorized_keys"
-readonly sudoFile="/etc/pam.d/sudo"
-readonly sshFile="/etc/ssh/sshd_config"
-readonly scriptLoc="/usr/local/sbin/sudokey"
-readonly keyLine="auth \+sufficient \+pam_ssh_agent_auth.so \+file=~/.ssh/sudo_keys"
-readonly passLine="auth \+include \+system-auth"
-readonly passLine2="password \+include \+system-auth"
-readonly repoLoc="https://raw.githubusercontent.com/CoolandonRS/sudokey/main"
+readonly ver=5 # Do not change
+readonly fallbackRepo="https://raw.githubusercontent.com/CoolandonRS/sudokey/main" # changes will be forgotten on update/reinstall
+
+if ! [ -f "/etc/sudokey.conf" ]; then
+  echo "Config not found! Recreating..."
+  if [[ $(id -u) != 0 ]]; then
+    echo "Must run as root to recreate config!"
+    exit 1
+  fi
+  wget -q "$fallbackRepo/sudokey.conf.sh" -O /etc/sudokey.conf
+fi
+source /etc/sudokey.conf
+
+if false; then
+  # Exists so my IDE will recognize that the config vars exist.
+  source sudokey.conf.sh
+fi
 
 if [[ $(id -u) != 0 ]]; then
   if [[ ! "$1" =~ ^(ls)|(list)|(help)|$ ]]; then
@@ -73,7 +80,7 @@ function target() {
   if [ -n "$1" ]; then
     user=$1
   else
-    read -p "Username: " user
+    read -rp "Username: " user
   fi
   sshloc=$(eval echo ~"$user")/.ssh
   sudokeyFile="$sshloc"/"$sudokeyFilename"
@@ -88,7 +95,7 @@ function _add() {
     fi
     key=$1
   else
-    read -p "Key: " key
+    read -rp "Key: " key
   fi
   unlock
   echo "$key" >> "$sudokeyFile"
@@ -112,7 +119,7 @@ function _rm() {
     num=$1
   else
     echo; _ls; echo
-    read -p "Which: " num
+    read -rp "Which: " num
   fi
   unlock
   sed -i "${num}"d "$sudokeyFile"
@@ -178,8 +185,11 @@ function _reinstall() {
   wget -q "$repoLoc/sudokey" -O "$scriptLoc"
   chown root:"$group" "$scriptLoc"
   chmod 750 "$scriptLoc"
-  echo "Installed!"
-  exit 0
+}
+function _reconf() {
+  assertSudo
+  mv -f /etc/sudokey.conf /etc/sudokey.conf.bak
+  wget -q "$fallbackRepo/sudokey.conf.sh" -O /etc/sudokey.conf
 }
 #endregion
 
@@ -241,6 +251,14 @@ function doTheThing() {
   reinstall)
     assertSudo
     _reinstall
+    echo "Reinstalled!"
+    exit 0
+    ;;
+  reconf)
+    assertSudo
+    _reconf
+    echo "Config reinstalled!"
+    exit 0
     ;;
   resetup)
     assertSudo
@@ -254,11 +272,21 @@ function doTheThing() {
     ;;
   update)
     assertSudo
-    local serverVer=$(curl -s "$repoLoc/version")
-    if (( ver >= ${serverVer:1} )); then
-      echo "Up to date!"; exit 0
+    local versions=mapfile -t versions < <(curl -s "$repoLoc/version")
+    if (( ver >= versions[0] )); then
+      echo "Script up to date!";
+    else
+      _reinstall
+      echo "Updated!"
     fi
-    _reinstall
+    if (( confVer >= versions[1] )); then
+      echo "Config up to date!";
+    else
+      _reconf
+      echo "Updated config!"
+      echo "Remember to copy persisted variables over!"
+    fi
+    exit 0
     ;;
   help | \?)
     echo
@@ -274,7 +302,8 @@ function doTheThing() {
     echo "passon           - enables password authentication on the server"
     echo "passoff          - disables password authentication on the server"
     echo "as [verb] [arg]  - run the specified verb as another user"
-    echo "reinstall        - reinstall sudo script"
+    echo "reinstall        - reinstall sudo script (doesn't touch config)"
+    echo "reconf           - reinstall default config"
     echo "resetup          - Add the necessary lines to $sudoFile and $sshFile if not present"
     echo "update           - check for an update, and if found, install"
     echo "help             - show this text"
@@ -282,7 +311,7 @@ function doTheThing() {
     exit 0
     ;;
   *)
-    echo "Unkown verb. Try \"sudokey help\""
+    echo "Unknown verb. Try \"sudokey help\""
     exit 4
     ;;
   esac

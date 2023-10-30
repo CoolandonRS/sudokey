@@ -50,6 +50,8 @@ else
 fi
 sudo chmod 750 /usr/local/sbin/sudokey
 
+sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey.conf.sh" -O /etc/sudokey.conf
+
 echo "Installed!"
 echo "Use 'sudokey gen' to make sudokeys for users"
 echo "Use 'sudokey passoff' to disable password sudo once sudokey has been set up"
