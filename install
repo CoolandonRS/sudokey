@@ -40,13 +40,15 @@ echo
 sudo sed -i '2 i auth sufficient pam_ssh_agent_auth.so file=~/.ssh/sudo_keys' /etc/pam.d/sudo
 sudo sed -i '/^AuthorizedKeysFile/ s/$/ .ssh\/sudo_keys/' /etc/ssh/sshd_config
 
-sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" /usr/local/sbin/sudokey
+sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey" -O /usr/local/sbin/sudokey
 if [ $wheel ]; then
   sudo chown root:wheel /usr/local/sbin/sudokey
 else
   sudo chown root:sudoers /usr/local/sbin/sudokey
 fi
 sudo chmod 750 /usr/local/sbin/sudokey
+
+sudo wget -q "https://raw.githubusercontent.com/CoolandonRS/sudokey/main/sudokey.conf.sh" -O /etc/sudokey.conf
 
 echo "Installed!"
 echo "Use 'sudokey gen' to make sudokeys for users"
